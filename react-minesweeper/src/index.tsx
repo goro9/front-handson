@@ -24,36 +24,46 @@ interface BoardPropsIf {
 interface BoardStateIf {
   cells: number[][];
   isOpen: boolean[][];
+  status: gameStatus;
+  step: number;
+}
+enum gameStatus {
+  ready,
+  inGame,
+  win,
+  loss,
 }
 class Board extends React.Component<BoardPropsIf, BoardStateIf> {
-  static rowNum: number = 9;
-  static colNum: number = 9;
+  static xMax: number = 9;
+  static yMax: number = 9;
   static bombNum: number = 10;
-  static bomb: number = -1; //bomb扱いする数字(0~7以外)
+  static bomb: number = -1; //bomb扱いする数字(0~8以外)
 
   constructor(props: BoardPropsIf) {
     super(props);
     this.state = {
       cells: this.initCells(),
       isOpen: this.initIsOpen(),
+      status: gameStatus.ready,
+      step: 0,
     };
     console.log(this.state.cells);
   }
 
   initIsOpen() {
-    let cells: boolean[][] = Array(Board.rowNum).fill(false);
-    for (let r = 0; r < Board.rowNum; r++) {
-      cells[r] = Array(Board.colNum).fill(false);
+    let cells: boolean[][] = Array(Board.xMax).fill(false);
+    for (let r = 0; r < Board.xMax; r++) {
+      cells[r] = Array(Board.yMax).fill(false);
     }
 
     return cells;
   }
 
   initCells() {
-    // let bombs: boolean[][] = Array(Board.rowNum).fill((Array(Board.colNum).fill(false)));
-    let cells: number[][] = Array(Board.rowNum).fill(0);
-    for (let r = 0; r < Board.rowNum; r++) {
-      cells[r] = Array(Board.colNum).fill(0);
+    // let bombs: boolean[][] = Array(Board.xMax).fill((Array(Board.yMax).fill(false)));
+    let cells: number[][] = Array(Board.xMax).fill(0);
+    for (let r = 0; r < Board.xMax; r++) {
+      cells[r] = Array(Board.yMax).fill(0);
     }
     this.initBombs(cells);
     this.initNums(cells);
@@ -65,21 +75,19 @@ class Board extends React.Component<BoardPropsIf, BoardStateIf> {
 
     let i = 0;
     while (i < Board.bombNum) {
-      const pos = rand(Board.rowNum * Board.colNum - 1);
-      const row = Math.floor(pos / Board.rowNum);
-      const col = pos % Board.rowNum;
-      if (bombs[row][col] !== Board.bomb) {
-        bombs[row][col] = Board.bomb;
+      const pos = rand(Board.xMax * Board.yMax - 1);
+      const x = Math.floor(pos / Board.xMax);
+      const y = pos % Board.xMax;
+      if (bombs[x][y] !== Board.bomb) {
+        bombs[x][y] = Board.bomb;
         i++;
       }
     }
-    // console.log(bombs);
-    // return bombs;
   }
 
   initNums(cells: number[][]) {
-    for(let r = 0; r < Board.rowNum; r++) {
-      for (let c = 0; c < Board.colNum; c++) {
+    for(let r = 0; r < Board.xMax; r++) {
+      for (let c = 0; c < Board.yMax; c++) {
         if (cells[r][c] !== Board.bomb) {
           cells[r][c] = this.calcNum(cells, r, c);
         }
@@ -87,55 +95,79 @@ class Board extends React.Component<BoardPropsIf, BoardStateIf> {
     }
   }
 
-  calcNum(cells: number[][], row: number, col: number) {
+  calcNum(cells: number[][], x: number, y: number) {
     let num: number = 0;
-    const arroundCellFull: {row: number, col: number}[] = [
-      {row: row - 1, col: col - 1},
-      {row: row - 1, col: col    },
-      {row: row - 1, col: col + 1},
-      {row: row    , col: col - 1},
-      {row: row    , col: col + 1},
-      {row: row + 1, col: col - 1},
-      {row: row + 1, col: col    },
-      {row: row + 1, col: col + 1},
+    const arroundCellFull: {x: number, y: number}[] = [
+      {x: x - 1, y: y - 1},
+      {x: x - 1, y: y    },
+      {x: x - 1, y: y + 1},
+      {x: x    , y: y - 1},
+      {x: x    , y: y + 1},
+      {x: x + 1, y: y - 1},
+      {x: x + 1, y: y    },
+      {x: x + 1, y: y + 1},
     ];
 
     const arroundCell = arroundCellFull.filter((cell) => {
-      return (cell.row >= 0 && cell.col >= 0 && cell.row < cells.length && cell.col < cells[0].length);
+      return (cell.x >= 0 && cell.y >= 0 && cell.x < cells.length && cell.y < cells[0].length);
     });
-    console.log(arroundCell);
 
     arroundCell.forEach((cell) => {
-      if (cells[cell.row][cell.col] === Board.bomb) {
+      if (cells[cell.x][cell.y] === Board.bomb) {
         num++;
       }
     })
     return num;
   }
     
-  handleClick(row: number, col: number) {
+  handleClick(x: number, y: number) {
+    const cells = this.state.cells.slice();
     const isOpen = this.state.isOpen.slice();
-    isOpen[row][col] = true;
+    let status = this.state.status;
+    const step = this.state.step + 1;
+
+    if (status === gameStatus.win || status === gameStatus.loss) {
+      return;
+    }
+
+    isOpen[x][y] = true;
+    if (cells[x][y] === Board.bomb) {
+      status = gameStatus.loss;
+    }
+
+    if (step >= (Board.xMax * Board.yMax - Board.bombNum)) {
+      status = gameStatus.win;
+    }
+
     this.setState({
-      isOpen: this.state.isOpen,
+      isOpen: isOpen,
+      status: status,
+      step: step,
     });
   }
 
-  renderSquare(row: number, col: number) {
+  renderSquare(x: number, y: number) {
     return (
       <Square
-        element={this.state.cells[row][col]}
-        isOpen={this.state.isOpen[row][col]}
-        onClick={() => this.handleClick(row, col)}
+        element={this.state.cells[x][y]}
+        isOpen={this.state.isOpen[x][y]}
+        onClick={() => this.handleClick(x, y)}
       />
     );
   }
 
   render() {
-    let boardJsx: JSX.Element[] = Array(Board.rowNum);
-    for (let r = 0; r < Board.rowNum; r++) {
-      let colJsx: JSX.Element[] = Array(Board.colNum);
-      for (let c = 0; c < Board.colNum; c++) {
+    let statusStr = ' ';
+    if (this.state.status === gameStatus.loss) {
+      statusStr = 'you are lose.';
+    } else if (this.state.status === gameStatus.win) {
+      statusStr = 'you are win.';
+    }
+
+    let boardJsx: JSX.Element[] = Array(Board.xMax);
+    for (let r = 0; r < Board.xMax; r++) {
+      let colJsx: JSX.Element[] = Array(Board.yMax);
+      for (let c = 0; c < Board.yMax; c++) {
         colJsx.push(this.renderSquare(r, c));
       }
       boardJsx.push(<div className="board-row">{colJsx}</div>);
@@ -143,7 +175,7 @@ class Board extends React.Component<BoardPropsIf, BoardStateIf> {
 
     return (
       <div>
-        <div className="status">{/* status */}</div>
+        <div className="status">{statusStr}</div>
         {boardJsx}
       </div>
     );
