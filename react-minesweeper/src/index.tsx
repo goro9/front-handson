@@ -3,13 +3,17 @@ import ReactDOM from 'react-dom';
 import './index.css';
 
 interface SquarePropsIf {
-  value: string;
+  element: number;
+  isOpen: boolean;
   onClick: () => void;
 }
+
 function Square(props: SquarePropsIf) {
+  const cellStr = props.isOpen ? ((props.element === Board.bomb) ? 'B' : String(props.element)) : "";
+
   return (
     <button className="square" onClick={props.onClick}>
-      {props.value}
+      {cellStr}
     </button>
   );
 }
@@ -18,66 +22,129 @@ interface BoardPropsIf {
   squares: Array<string>;
 }
 interface BoardStateIf {
-  squares: Array<string>;
-  xIsNext: boolean;
+  cells: number[][];
+  isOpen: boolean[][];
 }
 class Board extends React.Component<BoardPropsIf, BoardStateIf> {
+  static rowNum: number = 9;
+  static colNum: number = 9;
+  static bombNum: number = 10;
+  static bomb: number = -1; //bomb扱いする数字(0~7以外)
+
   constructor(props: BoardPropsIf) {
     super(props);
     this.state = {
-      squares: Array(9).fill(''),
-      xIsNext: true,
+      cells: this.initCells(),
+      isOpen: this.initIsOpen(),
     };
+    console.log(this.state.cells);
   }
 
-  handleClick(i: number) {
-    const squares = this.state.squares.slice();
-    if (calculateWinner(squares) || squares[i] !== '') {
-      return;
+  initIsOpen() {
+    let cells: boolean[][] = Array(Board.rowNum).fill(false);
+    for (let r = 0; r < Board.rowNum; r++) {
+      cells[r] = Array(Board.colNum).fill(false);
     }
-    squares[i] = this.state.xIsNext ? 'X' : 'O';
+
+    return cells;
+  }
+
+  initCells() {
+    // let bombs: boolean[][] = Array(Board.rowNum).fill((Array(Board.colNum).fill(false)));
+    let cells: number[][] = Array(Board.rowNum).fill(0);
+    for (let r = 0; r < Board.rowNum; r++) {
+      cells[r] = Array(Board.colNum).fill(0);
+    }
+    this.initBombs(cells);
+    this.initNums(cells);
+
+    return cells;
+  }
+
+  initBombs(bombs: number[][]) {
+
+    let i = 0;
+    while (i < Board.bombNum) {
+      const pos = rand(Board.rowNum * Board.colNum - 1);
+      const row = Math.floor(pos / Board.rowNum);
+      const col = pos % Board.rowNum;
+      if (bombs[row][col] !== Board.bomb) {
+        bombs[row][col] = Board.bomb;
+        i++;
+      }
+    }
+    // console.log(bombs);
+    // return bombs;
+  }
+
+  initNums(cells: number[][]) {
+    for(let r = 0; r < Board.rowNum; r++) {
+      for (let c = 0; c < Board.colNum; c++) {
+        if (cells[r][c] !== Board.bomb) {
+          cells[r][c] = this.calcNum(cells, r, c);
+        }
+      }
+    }
+  }
+
+  calcNum(cells: number[][], row: number, col: number) {
+    let num: number = 0;
+    const arroundCellFull: {row: number, col: number}[] = [
+      {row: row - 1, col: col - 1},
+      {row: row - 1, col: col    },
+      {row: row - 1, col: col + 1},
+      {row: row    , col: col - 1},
+      {row: row    , col: col + 1},
+      {row: row + 1, col: col - 1},
+      {row: row + 1, col: col    },
+      {row: row + 1, col: col + 1},
+    ];
+
+    const arroundCell = arroundCellFull.filter((cell) => {
+      return (cell.row >= 0 && cell.col >= 0 && cell.row < cells.length && cell.col < cells[0].length);
+    });
+    console.log(arroundCell);
+
+    arroundCell.forEach((cell) => {
+      if (cells[cell.row][cell.col] === Board.bomb) {
+        num++;
+      }
+    })
+    return num;
+  }
+    
+  handleClick(row: number, col: number) {
+    const isOpen = this.state.isOpen.slice();
+    isOpen[row][col] = true;
     this.setState({
-      squares: squares,
-      xIsNext: !this.state.xIsNext,
+      isOpen: this.state.isOpen,
     });
   }
 
-  renderSquare(i: number) {
+  renderSquare(row: number, col: number) {
     return (
       <Square
-        value={this.state.squares[i]}
-        onClick={() => this.handleClick(i)}
+        element={this.state.cells[row][col]}
+        isOpen={this.state.isOpen[row][col]}
+        onClick={() => this.handleClick(row, col)}
       />
     );
   }
 
   render() {
-    const winner = calculateWinner(this.state.squares);
-    let status;
-    if (winner) {
-      status = 'Winner: ' + winner;
-    } else {
-      status = 'Next player: ' + (this.state.xIsNext ? 'X' : 'O');
+    let boardJsx: JSX.Element[] = Array(Board.rowNum);
+    for (let r = 0; r < Board.rowNum; r++) {
+      let colJsx: JSX.Element[] = Array(Board.colNum);
+      for (let c = 0; c < Board.colNum; c++) {
+        colJsx.push(this.renderSquare(r, c));
+      }
+      boardJsx.push(<div className="board-row">{colJsx}</div>);
     }
 
     return (
       <div>
-        <div className="status">{status}</div>
-        <div className="board-row">
-          {this.renderSquare(0)}
-          {this.renderSquare(1)}
-          {this.renderSquare(2)}
-        </div>
-        <div className="board-row">
-          {this.renderSquare(3)}
-          {this.renderSquare(4)}
-          {this.renderSquare(5)}
-        </div>
-        <div className="board-row">
-          {this.renderSquare(6)}
-          {this.renderSquare(7)}
-          {this.renderSquare(8)}
-        </div>
+        <div className="status">{/* status */}</div>
+        {boardJsx}
       </div>
     );
   }
@@ -101,27 +168,11 @@ class Game extends React.Component {
 
 // ========================================
 
+function rand(max: number) {
+  return Math.floor(Math.random() * Math.floor(max));
+}
+
 ReactDOM.render(
   <Game />,
   document.getElementById('root')
 );
-
-function calculateWinner(squares: Array<string>) {
-  const lines = [
-    [0, 1, 2],
-    [3, 4, 5],
-    [6, 7, 8],
-    [0, 3, 6],
-    [1, 4, 7],
-    [2, 5, 8],
-    [0, 4, 8],
-    [2, 4, 6],
-  ];
-  for (let i = 0; i < lines.length; i++) {
-    const [a, b, c] = lines[i];
-    if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
-      return squares[a];
-    }
-  }
-  return null;
-}
