@@ -36,7 +36,9 @@ class Board<T> {
 })();
 
 function main() {
-    let game = new Board(9, 9);
+    let game = new Board<number>(9, 9);
+    console.log(game.board);
+    console.log(typeof(game.board[0][0]));
     let i = 0;
     for (let x = 0; x < 9; x++) {
         game.board[x] = Array(9);
@@ -46,6 +48,7 @@ function main() {
         }
     }
     console.log(game.board);
+    console.log(typeof(game.board[0][0]));
     game.forAround(5, 5, (x, y) => {
         console.log(x, y, game.board[x][y]);
     })
