@@ -4,13 +4,12 @@ import './index.css';
 import { Cells } from './board-handler';
 
 interface SquarePropsIf {
-  element: number;
-  isOpen: boolean;
+  cell: MineBoardElement;
   onClick: () => void;
 }
 
 function Square(props: SquarePropsIf) {
-  const cellStr = props.isOpen ? ((props.element === Board.bomb) ? 'B' : String(props.element)) : "";
+  const cellStr = props.cell.isOpen ? ((props.cell.isBomb) ? 'B' : String(props.cell.bombCount)) : "";
 
   return (
     <button className="square" onClick={props.onClick}>
@@ -25,14 +24,12 @@ type MineBoardElement = {
   bombCount: number;
 }
 interface BoardPropsIf {
-  squares: Array<string>;
+  
 }
 interface BoardStateIf {
-  cells: number[][];
-  isOpen: boolean[][];
   status: gameStatus;
   step: number;
-  boardCells: Cells<MineBoardElement>;
+  cells: Cells<MineBoardElement>;
 }
 enum gameStatus {
   ready,
@@ -44,138 +41,63 @@ class Board extends React.Component<BoardPropsIf, BoardStateIf> {
   static xMax: number = 9;
   static yMax: number = 9;
   static bombNum: number = 10;
-  static bomb: number = -1; //bomb扱いする数字(0~8以外)
 
   constructor(props: BoardPropsIf) {
     super(props);
-    const initialElm: MineBoardElement = {
+    const initialCell: MineBoardElement = {
       isBomb: false,
       isOpen: false,
       bombCount: 0,
     }
     this.state = {
-      cells: this.initCells(),
-      isOpen: this.initIsOpen(),
       status: gameStatus.ready,
       step: 0,
-      boardCells: new Cells(Board.xMax, Board.yMax, initialElm)
+      cells: new Cells(Board.xMax, Board.yMax, initialCell)
     };
 
-    let boardCells = this.state.boardCells;
-    this.initBombs_(boardCells);
-    this.initNums_(boardCells);
-    this.setState({
-      boardCells: boardCells
-    });
-
-    console.log("boardCells");
-    console.log(this.state.boardCells);
-  }
-
-  initIsOpen() {
-    let cells: boolean[][] = Array(Board.xMax).fill(false);
-    for (let r = 0; r < Board.xMax; r++) {
-      cells[r] = Array(Board.yMax).fill(false);
-    }
-
-    return cells;
-  }
-
-  initCells() {
-    // let bombs: boolean[][] = Array(Board.xMax).fill((Array(Board.yMax).fill(false)));
-    let cells: number[][] = Array(Board.xMax).fill(0);
-    for (let r = 0; r < Board.xMax; r++) {
-      cells[r] = Array(Board.yMax).fill(0);
-    }
+    let cells = this.state.cells;
     this.initBombs(cells);
     this.initNums(cells);
+    this.setState({
+      cells: cells
+    });
 
-    return cells;
+    console.log("cells");
+    console.log(this.state.cells);
   }
 
-  initBombs_(boardCells: Cells<MineBoardElement>) {
+  initBombs(cells: Cells<MineBoardElement>) {
     let i = 0;
     while (i < Board.bombNum) {
       const pos = rand(Board.xMax * Board.yMax - 1);
       const x = Math.floor(pos / Board.xMax);
       const y = pos % Board.xMax;
       // console.log(pos, x, y);
-      if (boardCells.board[x][y].isBomb !== true) {
-        boardCells.board[x][y] = Object.assign({}, boardCells.board[x][y], {isBomb: true});
+      if (!cells.board[x][y].isBomb) {
+        cells.board[x][y] = Object.assign({}, cells.board[x][y], {isBomb: true});
         i++;
       }
     }
   }
 
-  initBombs(bombs: number[][]) {
-
-    let i = 0;
-    while (i < Board.bombNum) {
-      const pos = rand(Board.xMax * Board.yMax - 1);
-      const x = Math.floor(pos / Board.xMax);
-      const y = pos % Board.xMax;
-      if (bombs[x][y] !== Board.bomb) {
-        bombs[x][y] = Board.bomb;
-        i++;
-      }
-    }
-  }
-
-  initNums_(boardCells: Cells<MineBoardElement>) {
+  initNums(cells: Cells<MineBoardElement>) {
     for(let r = 0; r < Board.xMax; r++) {
       for (let c = 0; c < Board.yMax; c++) {
-        if (boardCells.board[r][c].isBomb !== true) {
+        if (!cells.board[r][c].isBomb) {
           let cnt = 0;
-          boardCells.forAround(r, c, (cbr, cbc) => {
-            console.log(r, c, cbr, cbc);
-            if (boardCells.board[cbr][cbc].isBomb === true) {
+          cells.forAround(r, c, (cbr, cbc) => {
+            if (cells.board[cbr][cbc].isBomb) {
               cnt++;
             }
           });
-          boardCells.board[r][c] = Object.assign({}, boardCells.board[r][c], {bombCount: cnt});
+          cells.board[r][c] = Object.assign({}, cells.board[r][c], {bombCount: cnt});
         }
       }
     }
   }
 
-  initNums(cells: number[][]) {
-    for(let r = 0; r < Board.xMax; r++) {
-      for (let c = 0; c < Board.yMax; c++) {
-        if (cells[r][c] !== Board.bomb) {
-          cells[r][c] = this.calcNum(cells, r, c);
-        }
-      }
-    }
-  }
-
-  calcNum(cells: number[][], x: number, y: number) {
-    let num: number = 0;
-    const arroundCellFull: {x: number, y: number}[] = [
-      {x: x - 1, y: y - 1},
-      {x: x - 1, y: y    },
-      {x: x - 1, y: y + 1},
-      {x: x    , y: y - 1},
-      {x: x    , y: y + 1},
-      {x: x + 1, y: y - 1},
-      {x: x + 1, y: y    },
-      {x: x + 1, y: y + 1},
-    ];
-
-    const arroundCell = arroundCellFull.filter((cell) => {
-      return (cell.x >= 0 && cell.y >= 0 && cell.x < cells.length && cell.y < cells[0].length);
-    });
-
-    arroundCell.forEach((cell) => {
-      if (cells[cell.x][cell.y] === Board.bomb) {
-        num++;
-      }
-    })
-    return num;
-  }
-    
   handleClick(x: number, y: number) {
-    const cells = this.state.cells.slice();
-    const isOpen = this.state.isOpen.slice();
+    const cells = this.state.cells;
     let status = this.state.status;
     const step = this.state.step + 1;
 
@@ -183,12 +105,12 @@ class Board extends React.Component<BoardPropsIf, BoardStateIf> {
       return;
     }
 
-    isOpen[x][y] = true;
-    if (cells[x][y] === 0) {
+    cells.board[x][y].isOpen = true;
+    if (cells.board[x][y].bombCount === 0) {
       // oprn around cell
     }
 
-    if (cells[x][y] === Board.bomb) {
+    if (cells.board[x][y].isBomb) {
       status = gameStatus.loss;
     }
 
@@ -197,7 +119,6 @@ class Board extends React.Component<BoardPropsIf, BoardStateIf> {
     }
 
     this.setState({
-      isOpen: isOpen,
       status: status,
       step: step,
     });
@@ -206,8 +127,7 @@ class Board extends React.Component<BoardPropsIf, BoardStateIf> {
   renderSquare(x: number, y: number) {
     return (
       <Square
-        element={this.state.cells[x][y]}
-        isOpen={this.state.isOpen[x][y]}
+        cell={this.state.cells.board[x][y]}
         onClick={() => this.handleClick(x, y)}
       />
     );
@@ -244,7 +164,7 @@ class Game extends React.Component {
     return (
       <div className="game">
         <div className="game-board">
-          <Board squares={Array(9).fill('')}/>
+          <Board />
         </div>
         <div className="game-info">
           <div>{/* status */}</div>

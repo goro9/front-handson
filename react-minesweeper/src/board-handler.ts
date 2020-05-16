@@ -35,23 +35,23 @@ export class Cells<T> {
 //     main();
 // })();
 
-function main() {
-    let game = new Cells<number>(9, 9, 0);
-    console.log(game.board);
-    console.log(typeof(game.board[0][0]));
+// function main() {
+//     let game = new Cells<number>(9, 9, 0);
+//     console.log(game.board);
+//     console.log(typeof(game.board[0][0]));
 
-    let i = 0;
-    for (let x = 0; x < 9; x++) {
-        game.board[x] = Array(9);
-        for (let y = 0; y < 9; y++) {
-            game.board[x][y] = i;
-            ++i;
-        }
-    }
+//     let i = 0;
+//     for (let x = 0; x < 9; x++) {
+//         game.board[x] = Array(9);
+//         for (let y = 0; y < 9; y++) {
+//             game.board[x][y] = i;
+//             ++i;
+//         }
+//     }
     
-    console.log(game.board);
-    console.log(typeof(game.board[0][0]));
-    game.forAround(1, 0, (x, y) => {
-        console.log(x, y, game.board[x][y]);
-    })
-}
+//     console.log(game.board);
+//     console.log(typeof(game.board[0][0]));
+//     game.forAround(1, 0, (x, y) => {
+//         console.log(x, y, game.board[x][y]);
+//     })
+// }
