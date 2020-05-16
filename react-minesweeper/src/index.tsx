@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
+import { Cells } from './board-handler';
 
 interface SquarePropsIf {
   element: number;
@@ -18,6 +19,11 @@ function Square(props: SquarePropsIf) {
   );
 }
 
+type MineBoardElement = {
+  isBomb: boolean;
+  isOpen: boolean;
+  bombCount: number;
+}
 interface BoardPropsIf {
   squares: Array<string>;
 }
@@ -26,6 +32,7 @@ interface BoardStateIf {
   isOpen: boolean[][];
   status: gameStatus;
   step: number;
+  boardCells: Cells<MineBoardElement>;
 }
 enum gameStatus {
   ready,
@@ -41,13 +48,28 @@ class Board extends React.Component<BoardPropsIf, BoardStateIf> {
 
   constructor(props: BoardPropsIf) {
     super(props);
+    const initialElm: MineBoardElement = {
+      isBomb: false,
+      isOpen: false,
+      bombCount: 0,
+    }
     this.state = {
       cells: this.initCells(),
       isOpen: this.initIsOpen(),
       status: gameStatus.ready,
       step: 0,
+      boardCells: new Cells(Board.xMax, Board.yMax, initialElm)
     };
-    console.log(this.state.cells);
+
+    let boardCells = this.state.boardCells;
+    this.initBombs_(boardCells);
+    this.initNums_(boardCells);
+    this.setState({
+      boardCells: boardCells
+    });
+
+    console.log("boardCells");
+    console.log(this.state.boardCells);
   }
 
   initIsOpen() {
@@ -71,6 +93,20 @@ class Board extends React.Component<BoardPropsIf, BoardStateIf> {
     return cells;
   }
 
+  initBombs_(boardCells: Cells<MineBoardElement>) {
+    let i = 0;
+    while (i < Board.bombNum) {
+      const pos = rand(Board.xMax * Board.yMax - 1);
+      const x = Math.floor(pos / Board.xMax);
+      const y = pos % Board.xMax;
+      // console.log(pos, x, y);
+      if (boardCells.board[x][y].isBomb !== true) {
+        boardCells.board[x][y] = Object.assign({}, boardCells.board[x][y], {isBomb: true});
+        i++;
+      }
+    }
+  }
+
   initBombs(bombs: number[][]) {
 
     let i = 0;
@@ -81,6 +117,23 @@ class Board extends React.Component<BoardPropsIf, BoardStateIf> {
       if (bombs[x][y] !== Board.bomb) {
         bombs[x][y] = Board.bomb;
         i++;
+      }
+    }
+  }
+
+  initNums_(boardCells: Cells<MineBoardElement>) {
+    for(let r = 0; r < Board.xMax; r++) {
+      for (let c = 0; c < Board.yMax; c++) {
+        if (boardCells.board[r][c].isBomb !== true) {
+          let cnt = 0;
+          boardCells.forAround(r, c, (cbr, cbc) => {
+            console.log(r, c, cbr, cbc);
+            if (boardCells.board[cbr][cbc].isBomb === true) {
+              cnt++;
+            }
+          });
+          boardCells.board[r][c] = Object.assign({}, boardCells.board[r][c], {bombCount: cnt});
+        }
       }
     }
   }
@@ -131,6 +184,10 @@ class Board extends React.Component<BoardPropsIf, BoardStateIf> {
     }
 
     isOpen[x][y] = true;
+    if (cells[x][y] === 0) {
+      // oprn around cell
+    }
+
     if (cells[x][y] === Board.bomb) {
       status = gameStatus.loss;
     }
