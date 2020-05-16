@@ -1,11 +1,11 @@
 
-class Board<T> {
+export class Cells<T> {
     board: T[][];
 
-    constructor (rowMax: number, colMax: number) {
-        this.board = Array(rowMax);
+    constructor (rowMax: number, colMax: number, initVal: T) {
+        this.board = Array(rowMax).fill(initVal);
         for (let r = 0; r < rowMax; r++) {
-            this.board[r] = Array(colMax);
+            this.board[r] = Array(colMax).fill(initVal);
         }
     }
 
@@ -36,9 +36,10 @@ class Board<T> {
 })();
 
 function main() {
-    let game = new Board<number>(9, 9);
+    let game = new Cells<number>(9, 9, 0);
     console.log(game.board);
     console.log(typeof(game.board[0][0]));
+
     let i = 0;
     for (let x = 0; x < 9; x++) {
         game.board[x] = Array(9);
@@ -47,9 +48,10 @@ function main() {
             ++i;
         }
     }
+    
     console.log(game.board);
     console.log(typeof(game.board[0][0]));
-    game.forAround(5, 5, (x, y) => {
+    game.forAround(1, 0, (x, y) => {
         console.log(x, y, game.board[x][y]);
     })
 }
