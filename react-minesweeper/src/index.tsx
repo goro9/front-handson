@@ -72,7 +72,6 @@ class Board extends React.Component<BoardPropsIf, BoardStateIf> {
       const pos = rand(Board.xMax * Board.yMax - 1);
       const x = Math.floor(pos / Board.xMax);
       const y = pos % Board.xMax;
-      // console.log(pos, x, y);
       if (!cells.board[x][y].isBomb) {
         cells.board[x][y] = Object.assign({}, cells.board[x][y], {isBomb: true});
         i++;
@@ -96,27 +95,6 @@ class Board extends React.Component<BoardPropsIf, BoardStateIf> {
     }
   }
 
-  openAroundZero(x: number, y: number) {
-    const cells = this.state.cells;
-
-    cells.board[x][y] = Object.assign({}, cells.board[x][y], {isOpen: true});
-    this.setState({
-      cells: cells,
-    });
-
-    console.assert(!cells.board[x][y].isBomb);
-
-    if (cells.board[x][y].bombCount !== 0) {
-      return;
-    }
-
-    cells.forAround(x, y, (cbr, cbc) => {
-      if (!cells.board[cbr][cbc].isOpen) {
-        this.openAroundZero(cbr, cbc);
-      }
-    });
-  }
-
   handleClick(x: number, y: number) {
     const cells = this.state.cells;
     let status = this.state.status;
@@ -125,7 +103,6 @@ class Board extends React.Component<BoardPropsIf, BoardStateIf> {
       return;
     }
 
-    // cells.board[x][y].isOpen = true;
     cells.board[x][y] = Object.assign({}, cells.board[x][y], {isOpen: true});
     this.setState({
       cells: cells,
@@ -137,7 +114,6 @@ class Board extends React.Component<BoardPropsIf, BoardStateIf> {
           this.handleClick(cbx, cby)
         }
       });
-      // this.openAroundZero(x, y);
     }
 
     if (cells.board[x][y].isBomb) {
