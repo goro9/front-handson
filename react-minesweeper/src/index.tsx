@@ -9,8 +9,8 @@ interface SquarePropsIf {
 }
 
 function Square(props: SquarePropsIf) {
-  // const cellStr = props.cell.isOpen ? ((props.cell.isBomb) ? 'B' : String(props.cell.bombCount)) : "";
-  const cellStr = (props.cell.isBomb) ? 'B' : String(props.cell.bombCount);
+  const cellStr = props.cell.isOpen ? ((props.cell.isBomb) ? 'B' : String(props.cell.bombCount)) : "";
+  // const cellStr = (props.cell.isBomb) ? 'B' : String(props.cell.bombCount);
   const color = props.cell.isOpen ? 'white' : 'gray';
 
   return (
@@ -30,7 +30,6 @@ interface BoardPropsIf {
 }
 interface BoardStateIf {
   status: gameStatus;
-  step: number;
   cells: Cells<MineBoardElement>;
 }
 enum gameStatus {
@@ -53,7 +52,6 @@ class Board extends React.Component<BoardPropsIf, BoardStateIf> {
     }
     this.state = {
       status: gameStatus.ready,
-      step: 0,
       cells: new Cells(Board.xMax, Board.yMax, initialCell)
     };
 
@@ -122,7 +120,6 @@ class Board extends React.Component<BoardPropsIf, BoardStateIf> {
   handleClick(x: number, y: number) {
     const cells = this.state.cells;
     let status = this.state.status;
-    const step = this.state.step + 1;
 
     if (status === gameStatus.win || status === gameStatus.loss) {
       return;
@@ -135,21 +132,30 @@ class Board extends React.Component<BoardPropsIf, BoardStateIf> {
     });
     if (cells.board[x][y].bombCount === 0 && !cells.board[x][y].isBomb) {
       // oprn around cell
-      // cells.forAround(x, y, (cbx, cby) => this.handleClick(cbx, cby));
-      this.openAroundZero(x, y);
+      cells.forAround(x, y, (cbx, cby) => {
+        if (!cells.board[cbx][cby].isOpen) {
+          this.handleClick(cbx, cby)
+        }
+      });
+      // this.openAroundZero(x, y);
     }
 
     if (cells.board[x][y].isBomb) {
       status = gameStatus.loss;
     }
 
-    if (step >= (Board.xMax * Board.yMax - Board.bombNum)) {
+    let openCount = 0
+    cells.forAll((elm) => {
+      if (elm.isOpen) {
+        openCount++;
+      }
+    });
+    if (openCount >= (cells.cellNum - Board.bombNum)) {
       status = gameStatus.win;
     }
 
     this.setState({
       status: status,
-      step: step,
     });
   }
 
