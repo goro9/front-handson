@@ -10,9 +10,11 @@ interface SquarePropsIf {
 
 function Square(props: SquarePropsIf) {
   const cellStr = props.cell.isOpen ? ((props.cell.isBomb) ? 'B' : String(props.cell.bombCount)) : "";
+  // const cellStr = (props.cell.isBomb) ? 'B' : String(props.cell.bombCount);
+  const color = props.cell.isOpen ? 'white' : 'gray';
 
   return (
-    <button className="square" onClick={props.onClick}>
+    <button className="square" onClick={props.onClick} style={{ backgroundColor: color}}>
       {cellStr}
     </button>
   );
@@ -28,7 +30,6 @@ interface BoardPropsIf {
 }
 interface BoardStateIf {
   status: gameStatus;
-  step: number;
   cells: Cells<MineBoardElement>;
 }
 enum gameStatus {
@@ -51,7 +52,6 @@ class Board extends React.Component<BoardPropsIf, BoardStateIf> {
     }
     this.state = {
       status: gameStatus.ready,
-      step: 0,
       cells: new Cells(Board.xMax, Board.yMax, initialCell)
     };
 
@@ -72,7 +72,6 @@ class Board extends React.Component<BoardPropsIf, BoardStateIf> {
       const pos = rand(Board.xMax * Board.yMax - 1);
       const x = Math.floor(pos / Board.xMax);
       const y = pos % Board.xMax;
-      // console.log(pos, x, y);
       if (!cells.board[x][y].isBomb) {
         cells.board[x][y] = Object.assign({}, cells.board[x][y], {isBomb: true});
         i++;
@@ -99,28 +98,40 @@ class Board extends React.Component<BoardPropsIf, BoardStateIf> {
   handleClick(x: number, y: number) {
     const cells = this.state.cells;
     let status = this.state.status;
-    const step = this.state.step + 1;
 
     if (status === gameStatus.win || status === gameStatus.loss) {
       return;
     }
 
-    cells.board[x][y].isOpen = true;
-    if (cells.board[x][y].bombCount === 0) {
+    cells.board[x][y] = Object.assign({}, cells.board[x][y], {isOpen: true});
+    this.setState({
+      cells: cells,
+    });
+    if (cells.board[x][y].bombCount === 0 && !cells.board[x][y].isBomb) {
       // oprn around cell
+      cells.forAround(x, y, (cbx, cby) => {
+        if (!cells.board[cbx][cby].isOpen) {
+          this.handleClick(cbx, cby)
+        }
+      });
     }
 
     if (cells.board[x][y].isBomb) {
       status = gameStatus.loss;
     }
 
-    if (step >= (Board.xMax * Board.yMax - Board.bombNum)) {
+    let openCount = 0
+    cells.forAll((elm) => {
+      if (elm.isOpen) {
+        openCount++;
+      }
+    });
+    if (openCount >= (cells.cellNum - Board.bombNum)) {
       status = gameStatus.win;
     }
 
     this.setState({
       status: status,
-      step: step,
     });
   }
 

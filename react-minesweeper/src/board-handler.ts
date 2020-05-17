@@ -1,11 +1,25 @@
 
 export class Cells<T> {
     board: T[][];
+    rowMax: number;
+    colMax: number;
+    cellNum: number;
 
     constructor (rowMax: number, colMax: number, initVal: T) {
         this.board = Array(rowMax).fill(initVal);
+        this.rowMax = rowMax;
+        this.colMax = colMax;
+        this.cellNum = rowMax * colMax;
         for (let r = 0; r < rowMax; r++) {
             this.board[r] = Array(colMax).fill(initVal);
+        }
+    }
+
+    forAll (callback: (elm: T, row?: number, col?: number) => void) {
+        for (let r = 0; r < this.rowMax; r++) {
+            for (let c = 0; c < this.colMax; c++) {
+                callback(this.board[r][c], r, c);
+            }
         }
     }
 
