@@ -9,10 +9,12 @@ interface SquarePropsIf {
 }
 
 function Square(props: SquarePropsIf) {
-  const cellStr = props.cell.isOpen ? ((props.cell.isBomb) ? 'B' : String(props.cell.bombCount)) : "";
+  // const cellStr = props.cell.isOpen ? ((props.cell.isBomb) ? 'B' : String(props.cell.bombCount)) : "";
+  const cellStr = (props.cell.isBomb) ? 'B' : String(props.cell.bombCount);
+  const color = props.cell.isOpen ? 'white' : 'gray';
 
   return (
-    <button className="square" onClick={props.onClick}>
+    <button className="square" onClick={props.onClick} style={{ backgroundColor: color}}>
       {cellStr}
     </button>
   );
@@ -96,6 +98,27 @@ class Board extends React.Component<BoardPropsIf, BoardStateIf> {
     }
   }
 
+  openAroundZero(x: number, y: number) {
+    const cells = this.state.cells;
+
+    cells.board[x][y] = Object.assign({}, cells.board[x][y], {isOpen: true});
+    this.setState({
+      cells: cells,
+    });
+
+    console.assert(!cells.board[x][y].isBomb);
+
+    if (cells.board[x][y].bombCount !== 0) {
+      return;
+    }
+
+    cells.forAround(x, y, (cbr, cbc) => {
+      if (!cells.board[cbr][cbc].isOpen) {
+        this.openAroundZero(cbr, cbc);
+      }
+    });
+  }
+
   handleClick(x: number, y: number) {
     const cells = this.state.cells;
     let status = this.state.status;
@@ -105,9 +128,15 @@ class Board extends React.Component<BoardPropsIf, BoardStateIf> {
       return;
     }
 
-    cells.board[x][y].isOpen = true;
-    if (cells.board[x][y].bombCount === 0) {
+    // cells.board[x][y].isOpen = true;
+    cells.board[x][y] = Object.assign({}, cells.board[x][y], {isOpen: true});
+    this.setState({
+      cells: cells,
+    });
+    if (cells.board[x][y].bombCount === 0 && !cells.board[x][y].isBomb) {
       // oprn around cell
+      // cells.forAround(x, y, (cbx, cby) => this.handleClick(cbx, cby));
+      this.openAroundZero(x, y);
     }
 
     if (cells.board[x][y].isBomb) {
