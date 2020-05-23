@@ -45,6 +45,10 @@ export class Cells<T> {
     }
 }
 
+export function rand(max: number) {
+    return Math.floor(Math.random() * Math.floor(max));
+}
+  
 // (() => {
 //     main();
 // })();
