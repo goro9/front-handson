@@ -24,7 +24,6 @@ function Square(props: SquarePropsIf) {
 type MineBoardElement = {
   isBomb: boolean;
   isOpen: boolean;
-  isFirst: boolean;
   bombCount: number;
 }
 interface BoardPropsIf {
@@ -51,7 +50,6 @@ class Board extends React.Component<BoardPropsIf, BoardStateIf> {
     const initialCell: MineBoardElement = {
       isBomb: false,
       isOpen: false,
-      isFirst: false,
       bombCount: 0,
     }
     this.state = {
@@ -63,10 +61,11 @@ class Board extends React.Component<BoardPropsIf, BoardStateIf> {
 
   initBombs(cells: Cells<MineBoardElement>, xFirst: number, yFirst: number) {
     assert(!this.isInitialized);
+    const isFirstCells: Cells<boolean> = new Cells(Board.xMax, Board.yMax, false);
 
-    cells.board[xFirst][yFirst] = Object.assign({}, cells.board[xFirst][yFirst], {isFirst: true});
-    cells.forAround(xFirst, yFirst, (cbr, cbc) => {
-      cells.board[cbr][cbc] = Object.assign({}, cells.board[cbr][cbc], {isFirst: true});
+    isFirstCells.board[xFirst][yFirst] = true;
+    isFirstCells.forAround(xFirst, yFirst, (cbr, cbc) => {
+      isFirstCells.board[cbr][cbc] = true;
     });
 
     let i = 0;
@@ -74,7 +73,7 @@ class Board extends React.Component<BoardPropsIf, BoardStateIf> {
       const pos = rand(Board.xMax * Board.yMax - 1);
       const x = Math.floor(pos / Board.xMax);
       const y = pos % Board.xMax;
-      if (!cells.board[x][y].isBomb && !cells.board[x][y].isFirst) {
+      if (!cells.board[x][y].isBomb && !isFirstCells.board[x][y]) {
         cells.board[x][y] = Object.assign({}, cells.board[x][y], {isBomb: true});
         i++;
       }
