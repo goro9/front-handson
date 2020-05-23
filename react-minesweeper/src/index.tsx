@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
 import { Cells } from './board-handler';
+import assert from 'assert';
 
 interface SquarePropsIf {
   cell: MineBoardElement;
@@ -9,8 +10,8 @@ interface SquarePropsIf {
 }
 
 function Square(props: SquarePropsIf) {
-  const cellStr = props.cell.isOpen ? ((props.cell.isBomb) ? 'B' : String(props.cell.bombCount)) : "";
-  // const cellStr = (props.cell.isBomb) ? 'B' : String(props.cell.bombCount);
+  // const cellStr = props.cell.isOpen ? ((props.cell.isBomb) ? 'B' : String(props.cell.bombCount)) : "";
+  const cellStr = (props.cell.isBomb) ? 'B' : String(props.cell.bombCount);
   const color = props.cell.isOpen ? 'white' : 'gray';
 
   return (
@@ -23,6 +24,7 @@ function Square(props: SquarePropsIf) {
 type MineBoardElement = {
   isBomb: boolean;
   isOpen: boolean;
+  isFirst: boolean;
   bombCount: number;
 }
 interface BoardPropsIf {
@@ -42,37 +44,37 @@ class Board extends React.Component<BoardPropsIf, BoardStateIf> {
   static xMax: number = 9;
   static yMax: number = 9;
   static bombNum: number = 10;
+  private isInitialized: boolean;
 
   constructor(props: BoardPropsIf) {
     super(props);
     const initialCell: MineBoardElement = {
       isBomb: false,
       isOpen: false,
+      isFirst: false,
       bombCount: 0,
     }
     this.state = {
       status: gameStatus.ready,
       cells: new Cells(Board.xMax, Board.yMax, initialCell)
     };
-
-    let cells = this.state.cells;
-    this.initBombs(cells);
-    this.initNums(cells);
-    this.setState({
-      cells: cells
-    });
-
-    console.log("cells");
-    console.log(this.state.cells);
+    this.isInitialized = false;
   }
 
-  initBombs(cells: Cells<MineBoardElement>) {
+  initBombs(cells: Cells<MineBoardElement>, xFirst: number, yFirst: number) {
+    assert(!this.isInitialized);
+
+    cells.board[xFirst][yFirst] = Object.assign({}, cells.board[xFirst][yFirst], {isFirst: true});
+    cells.forAround(xFirst, yFirst, (cbr, cbc) => {
+      cells.board[cbr][cbc] = Object.assign({}, cells.board[cbr][cbc], {isFirst: true});
+    });
+
     let i = 0;
     while (i < Board.bombNum) {
       const pos = rand(Board.xMax * Board.yMax - 1);
       const x = Math.floor(pos / Board.xMax);
       const y = pos % Board.xMax;
-      if (!cells.board[x][y].isBomb) {
+      if (!cells.board[x][y].isBomb && !cells.board[x][y].isFirst) {
         cells.board[x][y] = Object.assign({}, cells.board[x][y], {isBomb: true});
         i++;
       }
@@ -80,19 +82,20 @@ class Board extends React.Component<BoardPropsIf, BoardStateIf> {
   }
 
   initNums(cells: Cells<MineBoardElement>) {
-    for(let r = 0; r < Board.xMax; r++) {
-      for (let c = 0; c < Board.yMax; c++) {
-        if (!cells.board[r][c].isBomb) {
-          let cnt = 0;
-          cells.forAround(r, c, (cbr, cbc) => {
-            if (cells.board[cbr][cbc].isBomb) {
-              cnt++;
-            }
-          });
-          cells.board[r][c] = Object.assign({}, cells.board[r][c], {bombCount: cnt});
-        }
+    assert(!this.isInitialized);
+    cells.forAll((elm, rr, cc) => {
+      const r = rr!;
+      const c = cc!;
+      if (!elm.isBomb) {
+        let cnt = 0;
+        cells.forAround(r, c, (cbr, cbc) => {
+          if (cells.board[cbr][cbc].isBomb) {
+            cnt++;
+          }
+        });
+        cells.board[r][c] = Object.assign({}, elm, {bombCount: cnt});
       }
-    }
+    })
   }
 
   handleClick(x: number, y: number) {
@@ -103,12 +106,16 @@ class Board extends React.Component<BoardPropsIf, BoardStateIf> {
       return;
     }
 
+    if (!this.isInitialized) {
+      this.initBombs(cells, x, y);
+      this.initNums(cells);
+      this.isInitialized = true;
+      status = gameStatus.inGame;
+    }
+
     cells.board[x][y] = Object.assign({}, cells.board[x][y], {isOpen: true});
-    this.setState({
-      cells: cells,
-    });
     if (cells.board[x][y].bombCount === 0 && !cells.board[x][y].isBomb) {
-      // oprn around cell
+      // open around cell
       cells.forAround(x, y, (cbx, cby) => {
         if (!cells.board[cbx][cby].isOpen) {
           this.handleClick(cbx, cby)
@@ -131,6 +138,7 @@ class Board extends React.Component<BoardPropsIf, BoardStateIf> {
     }
 
     this.setState({
+      cells: cells,
       status: status,
     });
   }
