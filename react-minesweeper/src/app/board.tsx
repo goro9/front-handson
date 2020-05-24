@@ -32,6 +32,8 @@ export class Board extends React.Component<BoardPropsIf, BoardStateIf> {
       cells: new Cells(Board.xMax, Board.yMax, initialCell)
     };
     this.isInitialized = false;
+    // this.handleClick = this.handleClick.bind(this);
+    // this.handleRightClick = this.handleRightClick.bind(this);
   }
 
   initBombs(cells: Cells<MineBoardElement>, xFirst: number, yFirst: number) {
@@ -70,6 +72,11 @@ export class Board extends React.Component<BoardPropsIf, BoardStateIf> {
         cells.board[r][c] = Object.assign({}, elm, {bombCount: cnt});
       }
     })
+  }
+
+  handleRightClick(e: React.MouseEvent<HTMLButtonElement>) {
+    e.preventDefault();
+    console.log("right click!!");
   }
 
   handleClick(x: number, y: number) {
@@ -122,6 +129,7 @@ export class Board extends React.Component<BoardPropsIf, BoardStateIf> {
       <Cell
         cell={this.state.cells.board[x][y]}
         onClick={() => this.handleClick(x, y)}
+        onRightClick={(e) => this.handleRightClick(e)}
       />
     );
   }
