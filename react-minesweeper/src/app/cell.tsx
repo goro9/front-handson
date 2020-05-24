@@ -5,6 +5,7 @@ import { MineBoardElement } from './common'
 interface CellPropsIf {
   cell: MineBoardElement;
   onClick: () => void;
+  onRightClick: (e: React.MouseEvent<HTMLButtonElement>) => void;
 }
 
 export function Cell(props: CellPropsIf) {
@@ -13,7 +14,7 @@ export function Cell(props: CellPropsIf) {
   const color = props.cell.isOpen ? 'white' : 'gray';
 
   return (
-    <button className="square" onClick={props.onClick} style={{ backgroundColor: color }}>
+    <button className="square" onClick={props.onClick} onContextMenu={props.onRightClick} style={{ backgroundColor: color }}>
       {cellStr}
     </button>
   );

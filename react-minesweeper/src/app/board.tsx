@@ -32,6 +32,8 @@ export class Board extends React.Component<BoardPropsIf, BoardStateIf> {
       cells: new Cells(Board.xMax, Board.yMax, initialCell)
     };
     this.isInitialized = false;
+    // this.handleClick = this.handleClick.bind(this);
+    // this.handleRightClick = this.handleRightClick.bind(this);
   }
 
   initBombs(cells: Cells<MineBoardElement>, xFirst: number, yFirst: number) {
@@ -70,6 +72,11 @@ export class Board extends React.Component<BoardPropsIf, BoardStateIf> {
         cells.board[r][c] = Object.assign({}, elm, {bombCount: cnt});
       }
     })
+  }
+
+  handleRightClick(e: React.MouseEvent<HTMLButtonElement>) {
+    e.preventDefault();
+    console.log("right click!!");
   }
 
   handleClick(x: number, y: number) {
@@ -117,11 +124,15 @@ export class Board extends React.Component<BoardPropsIf, BoardStateIf> {
     });
   }
 
-  renderSquare(x: number, y: number) {
+  renderCell(x: number, y: number) {
+    const key =  ('00' + x).slice(-2) + ":" + ('00' + y).slice(-2);
+
     return (
       <Cell
+        key={key}
         cell={this.state.cells.board[x][y]}
         onClick={() => this.handleClick(x, y)}
+        onRightClick={(e) => this.handleRightClick(e)}
       />
     );
   }
@@ -134,13 +145,14 @@ export class Board extends React.Component<BoardPropsIf, BoardStateIf> {
       statusStr = 'you are win.';
     }
 
-    let boardJsx: JSX.Element[] = Array(Board.xMax);
+    const boardJsx: JSX.Element[] = Array(Board.xMax);
     for (let r = 0; r < Board.xMax; r++) {
-      let colJsx: JSX.Element[] = Array(Board.yMax);
+      const key = ('00' + r).slice(-2);
+      const colJsx: JSX.Element[] = Array(Board.yMax);
       for (let c = 0; c < Board.yMax; c++) {
-        colJsx.push(this.renderSquare(r, c));
+        colJsx.push(this.renderCell(r, c));
       }
-      boardJsx.push(<div className="board-row">{colJsx}</div>);
+      boardJsx.push(<div key={key} className="board-row">{colJsx}</div>);
     }
 
     return (
