@@ -1,7 +1,7 @@
 
 export type MineBoardElement = {
   isBomb: boolean;
-  isOpen: boolean;
+  status: cellStatus;
   bombCount: number;
 }
 
@@ -10,4 +10,10 @@ export enum gameStatus {
   inGame,
   win,
   loss,
+}
+
+export enum cellStatus {
+  close,
+  open,
+  flag,
 }

@@ -1,7 +1,7 @@
 import React from 'react';
 import '../index.css';
 import assert from 'assert';
-import { MineBoardElement, gameStatus } from './common'
+import { MineBoardElement, gameStatus, cellStatus } from './common'
 import { Cells, rand } from './utils';
 import { Cell } from './cell'
 
@@ -15,16 +15,16 @@ interface BoardStateIf {
 }
 
 export class Board extends React.Component<BoardPropsIf, BoardStateIf> {
-  static xMax: number = 9;
-  static yMax: number = 9;
-  static bombNum: number = 10;
+  static xMax: number = 30;
+  static yMax: number = 16;
+  static bombNum: number = 99;
   private isInitialized: boolean;
 
   constructor(props: BoardPropsIf) {
     super(props);
     const initialCell: MineBoardElement = {
       isBomb: false,
-      isOpen: false,
+      status: cellStatus.close,
       bombCount: 0,
     }
     this.state = {
@@ -48,8 +48,8 @@ export class Board extends React.Component<BoardPropsIf, BoardStateIf> {
     let i = 0;
     while (i < Board.bombNum) {
       const pos = rand(Board.xMax * Board.yMax - 1);
-      const x = Math.floor(pos / Board.xMax);
-      const y = pos % Board.xMax;
+      const x = Math.floor(pos / Board.yMax);
+      const y = pos % Board.yMax;
       if (!cells.board[x][y].isBomb && !isFirstCells.board[x][y]) {
         cells.board[x][y] = Object.assign({}, cells.board[x][y], {isBomb: true});
         i++;
@@ -74,9 +74,34 @@ export class Board extends React.Component<BoardPropsIf, BoardStateIf> {
     })
   }
 
-  handleRightClick(e: React.MouseEvent<HTMLButtonElement>) {
+  handleRightClick(x: number, y: number, e: React.MouseEvent<HTMLButtonElement>) {
     e.preventDefault();
-    console.log("right click!!");
+
+    const cells = this.state.cells;
+    let status = this.state.status;
+
+    if (status === gameStatus.win || status === gameStatus.loss) {
+      return;
+    }
+
+    switch (cells.board[x][y].status) {
+      case cellStatus.close:
+        cells.board[x][y] = Object.assign({}, cells.board[x][y], {status: cellStatus.flag});
+        break;
+      case cellStatus.open:
+        break;
+      case cellStatus.flag:
+        cells.board[x][y] = Object.assign({}, cells.board[x][y], {status: cellStatus.close});
+        break;
+      default:
+        assert(false);
+    }
+
+    // TODO: count flag
+
+    this.setState({
+      cells: cells,
+    });
   }
 
   handleClick(x: number, y: number) {
@@ -87,6 +112,10 @@ export class Board extends React.Component<BoardPropsIf, BoardStateIf> {
       return;
     }
 
+    if (cells.board[x][y].status === cellStatus.flag) {
+      return;
+    }
+
     if (!this.isInitialized) {
       this.initBombs(cells, x, y);
       this.initNums(cells);
@@ -94,11 +123,11 @@ export class Board extends React.Component<BoardPropsIf, BoardStateIf> {
       status = gameStatus.inGame;
     }
 
-    cells.board[x][y] = Object.assign({}, cells.board[x][y], {isOpen: true});
+    cells.board[x][y] = Object.assign({}, cells.board[x][y], {status: cellStatus.open});
     if (cells.board[x][y].bombCount === 0 && !cells.board[x][y].isBomb) {
       // open around cell
       cells.forAround(x, y, (cbx, cby) => {
-        if (!cells.board[cbx][cby].isOpen) {
+        if (cells.board[cbx][cby].status === cellStatus.close) {
           this.handleClick(cbx, cby)
         }
       });
@@ -110,7 +139,7 @@ export class Board extends React.Component<BoardPropsIf, BoardStateIf> {
 
     let openCount = 0
     cells.forAll((elm) => {
-      if (elm.isOpen) {
+      if (elm.status === cellStatus.open) {
         openCount++;
       }
     });
@@ -132,7 +161,7 @@ export class Board extends React.Component<BoardPropsIf, BoardStateIf> {
         key={key}
         cell={this.state.cells.board[x][y]}
         onClick={() => this.handleClick(x, y)}
-        onRightClick={(e) => this.handleRightClick(e)}
+        onRightClick={(e) => this.handleRightClick(x, y, e)}
       />
     );
   }
